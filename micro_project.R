@@ -37,14 +37,17 @@ df$any_nih_data_sharing_new_grant <- factor(df$any_nih_data_sharing_new_grant)
 df$any_direct_cost_over_500k <- factor(df$any_direct_cost_over_500k)
 df$any_new_or_renewed_since_2003 <- factor(df$any_new_or_renewed_since_2003)
 df$is_data_shared <- factor(df$is_data_shared)
+df$is_usa_address <- factor(df$is_usa_address)
+levels(df$is_data_shared) <- c("no", "yes")
 
 
-# IMPUTATION
+##############################################################
+# Imputing missing values
+##############################################################
 imputed_df <- mice(df, m=1, maxit = 200, method = 'cart', seed = 2019)
 summary(imputed_df)
 df_final <- complete(imputed_df,1)
-levels(df_final$is_data_shared) <- c("no", "yes")
-df_final$is_usa_address <- factor(df_final$is_usa_address)
+
 
 #### Compute principal components of author experience
 # FIRST AUTHOR
@@ -60,7 +63,7 @@ pc_first$loadings
 #biplot(pc.first)
 first_author_exp_freq = ecdf(first_author_exp)(first_author_exp)
 
-### LAST AUTHOR
+# LAST AUTHOR
 pc_last = princomp(scale(cbind(log(1+df_final$last_hindex),
                                log(1+df_final$last_aindex), 
                                df_final$last_career_length)))
@@ -74,8 +77,9 @@ df_final$first_author_exp <- first_author_exp
 df_final$last_author_exp <- last_author_exp
 
 
-
+#################################################################
 # Feature selection using LASSO through cross validation
+#################################################################
 cv_lasso <- cv.glmnet(x= model.matrix(is_data_shared ~ ., df_final),
                       y = df_final$is_data_shared,
                       family = "binomial",
@@ -92,7 +96,9 @@ optimum_features <- row.names(coef)[index]
 optimum_features <- optimum_features[-1]
 df_lasso <- df_final[,c("impact_factor","policy_strength","first_hindex", "is_data_shared")]
 
+########################################################################
 # LOGISTIC REGRESSION
+########################################################################
 # model used by the author
 logistic_model_org <- glm(is_data_shared ~ policy_strength + 
                             is_usa_address * is_nih_funded +
@@ -116,14 +122,14 @@ summary(logistic_model_lasso)
 anova(logistic_model_org, test = 'Chisq')
 anova(logistic_model_lasso, test = 'Chisq')
 
-#compare two models : we can compare both the models using the ANOVA test. 
+# Compare two models : we can compare both the models using the ANOVA test. 
 # Let's say our null hypothesis is that second model is better than the first model. 
 anova(logistic_model_org,logistic_model_lasso,test = "Chisq")
 
 
-#######################################################
+######################################################################
 # checking the assumptions
-#######################################################
+######################################################################
 #################################################
 # A. Original model
 probabilities_org <- predict(logistic_model_org,type = "response")
@@ -173,7 +179,7 @@ model_data_org%>%
   filter(abs(.std.resid) > 3)
 #################################################################
 
-#############################################################
+#################################################################
 # B. Lasso model
 # 1. linearity
 probabilities_lasso <- predict(logistic_model_lasso, df_lasso[,-4],type = "response")
