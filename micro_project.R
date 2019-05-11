@@ -131,7 +131,7 @@ anova(logistic_model_org,logistic_model_lasso,test = "Chisq")
 # checking the assumptions
 ######################################################################
 #################################################
-# A. Original model
+# A. Original model (by authors)
 probabilities_org <- predict(logistic_model_org,type = "response")
 predicted_classes_org <- ifelse(probabilities_org > 0.5, "yes", "no")
 
@@ -180,7 +180,7 @@ model_data_org%>%
 #################################################################
 
 #################################################################
-# B. Lasso model
+# B. LASSO model (Variables selected using LASSO)
 # 1. linearity
 probabilities_lasso <- predict(logistic_model_lasso, df_lasso[,-4],type = "response")
 predicted_classes_lasso <- ifelse(probabilities_losso > 0.5, "yes", "no")
